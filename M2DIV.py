@@ -63,10 +63,8 @@ class M2DIV(object):
             self.dictConf = yaml.load(self.confFile)
         self.learning_rate = self.dictConf['learning_rate']
         self.listTestSet = self.dictConf['test_set']
-        #self.listValidationSet = self.dictConf['validation_set']
         self.lenTrainPermutation = self.dictConf['length_train_permutation']
         self.step = self.dictConf['step']
-        #self.gamma = self.dictConf['gamma']
         self.hidden_dim = self.dictConf['hidden_dim']
         self.search_time = 5000
         self.epoch = 50000
@@ -75,7 +73,6 @@ class M2DIV(object):
         self.fileResult = open(self.folder + '/' + sys.argv[1], 'w')
         self.fileReward = open(self.folder + '/' + sys.argv[2], 'w')
 
-        #self.floatTestTime = 0.0
 
     def alphaDCG(self, alpha, query, docList, k):
         DCG = 0.0
@@ -145,7 +142,6 @@ class M2DIV(object):
         query_repr = carpe_diem.dictQueryRepresentation[str(query_id)]
         query_repr = np.reshape(np.asarray(query_repr), -1).tolist()
         listSelecteddoc_repr = []
-        #listSelecteddoc_repr.append(query_repr)
         for doc_id in doc_list:
             doc_repr = carpe_diem.dictDocumentRepresentation[doc_id]
             doc_repr = np.reshape(np.asarray(doc_repr), -1).tolist()
@@ -159,7 +155,6 @@ class M2DIV(object):
         query_repr = carpe_diem.dictQueryRepresentation[str(query_id)]
         query_repr = np.reshape(np.asarray(query_repr), -1).tolist()
         listSelecteddoc_repr = []
-        #listSelecteddoc_repr.append(query_repr)
         for doc_id in doc_list:
             doc_repr = carpe_diem.dictDocumentRepresentation[doc_id]
             doc_repr = np.reshape(np.asarray(doc_repr), -1).tolist()
@@ -195,8 +190,7 @@ def build_model(carpe_diem):
     q_state_c = tf.sigmoid(tf.matmul(input_query, V_c))
     q_state_h = tf.sigmoid(tf.matmul(input_query, V_h))
     q_state = tf.concat([q_state_c, q_state_h], 1)
-    #q_doc = tf.concat([query, selected], 0)
-
+    
     # select first doc
     logits_first = tf.reshape(tf.matmul(tf.matmul(candidate, V), tf.transpose(q_state)), [-1])
     prob_first = tf.nn.softmax(logits_first)
@@ -242,7 +236,6 @@ else:
     sess.run(tf.global_variables_initializer())
 
 listKeys = carpe_diem.dictQueryPermutaion.keys()
-#random.shuffle(listKeys)
 iteration = 0
 
 for e in range(carpe_diem.epoch):
@@ -281,7 +274,6 @@ for e in range(carpe_diem.epoch):
         # sample without MCTS
         listSelectedSet_without_mcts = []
         listSelectedSet_repr_without_mcts = []
-        #listSelectedSet_repr_without_mcts.append(q)
         listPermutation_without_mcts = copy.deepcopy(carpe_diem.dictQueryPermutaion[query_id]['permutation'])
         random.shuffle(listPermutation_without_mcts)
 
@@ -316,45 +308,14 @@ for e in range(carpe_diem.epoch):
             doc_repr = np.reshape(np.asarray(doc_repr), -1).tolist()
             listSelectedSet_repr_without_mcts.append(doc_repr)
         value_without_mcts = carpe_diem.alphaDCG(0.5, query_id, listSelectedSet_without_mcts, carpe_diem.lenTrainPermutation)
-    
-        # sample value function
-        '''
-        listSelectedSet_q = []
-        listSelectedSet_repr_q = []
-        listSelectedSet_repr_q.append(q)
-        listPermutation_q = copy.deepcopy(carpe_diem.dictQueryPermutaion[query_id]['permutation'])
-        random.shuffle(listPermutation_q)
-
-        while len(listSelectedSet_q) < carpe_diem.lenTrainPermutation:
-            c = listSelectedSet_repr_q
-            max_one_value_pred = float("-inf")
-            one_select_doc = ''
-            for can in listPermutation_q:
-                if can not in listSelectedSet_q:
-                    doc_repr = carpe_diem.dictDocumentRepresentation[can]
-                    doc_repr = np.reshape(np.asarray(doc_repr), -1).tolist()
-                    tmp_c = c + [doc_repr]
-                    one_value_pred = sess.run(value_pred, feed_dict={query_selected: tmp_c})
-                    if one_value_pred > max_one_value_pred:
-                        one_select_doc = can
-                        max_one_value_pred = one_value_pred
-            listSelectedSet_q.append(one_select_doc)
-            doc_repr = carpe_diem.dictDocumentRepresentation[one_select_doc]
-            doc_repr = np.reshape(np.asarray(doc_repr), -1).tolist()
-            listSelectedSet_repr_q.append(doc_repr)
-        
-        value_q = carpe_diem.alphaDCG(0.5, query_id, listSelectedSet_q, carpe_diem.lenTrainPermutation)
-        '''
 
         value_with_mcts = value_with_mcts / idealScore_without_mcts
         value_without_mcts = value_without_mcts / idealScore_without_mcts
-        #value_q = value_q / idealScore_without_mcts
-
+        
         carpe_diem.fileReward.write(str(e) + ' ' + str(iteration) + ' ' + query_id + ' ' + str(value_with_mcts) + ' ' + str(value_without_mcts) + '\n')
         carpe_diem.fileReward.flush()
 
         s = []
-        #s.append(q)
         for doc in listSelectedSet:
             doc_repr = carpe_diem.dictDocumentRepresentation[doc]
             doc_repr = np.reshape(np.asarray(doc_repr), -1).tolist()
@@ -398,7 +359,6 @@ for e in range(carpe_diem.epoch):
             fileTmpResult_value = open(carpe_diem.folder + '/tmp_result_value_' + sys.argv[3] + '.txt', 'w')
 
             for query_test in carpe_diem.listTestSet:
-                #fileRankingResult = open(carpe_diem.folder + '/ranking/' + 'test' + str(query_test) + '.ranking', 'w')
                 listSelectedSet = []
                 listSelectedSet_repr = []
                 listSelectedSet_q = []
@@ -411,9 +371,7 @@ for e in range(carpe_diem.epoch):
                 random.shuffle(listTest)
                 q_test = carpe_diem.dictQueryRepresentation[str(query_test)]
                 q_test = np.reshape(np.asarray(q_test), -1).tolist()
-                #listSelectedSet_repr.append(q_test)
-                #listSelectedSet_repr_q.append(q_test)
-            
+                
                 # policy
                 c = []
                 c_id = []
@@ -445,8 +403,7 @@ for e in range(carpe_diem.epoch):
                     doc_repr = carpe_diem.dictDocumentRepresentation[c_id[pred]]
                     doc_repr = np.reshape(np.asarray(doc_repr), -1).tolist()
                     listSelectedSet_repr.append(doc_repr)
-                    #fileRankingResult.write(c_id[pred] + '\n')
-
+                    
                 # save result
                 for id_num, doc_id_selected in enumerate(listSelectedSet):
                     fileTmpResult_policy.write(str(query_test) + ' Q0 ' + doc_id_selected + ' ' +str(id_num+1) + ' ' + str(len(listSelectedSet)-id_num) + ' ' + sys.argv[4] + '_' + sys.argv[3] + '\n')
@@ -489,8 +446,7 @@ for e in range(carpe_diem.epoch):
                     doc_repr = carpe_diem.dictDocumentRepresentation[one_doc_pred_test]
                     doc_repr = np.reshape(np.asarray(doc_repr), -1).tolist()
                     listSelectedSet_repr_q.append(doc_repr)
-                    #fileRankingResult.write(c_id[pred] + '\n')
-
+                    
                 # save result
                 for id_num, doc_id_selected in enumerate(listSelectedSet_q):
                     fileTmpResult_value.write(str(query_test) + ' Q0 ' + doc_id_selected + ' ' +str(id_num+1) + ' ' + str(len(listSelectedSet_q)-id_num) + ' ' + sys.argv[4] + '_' + sys.argv[3] + '\n')
@@ -524,8 +480,7 @@ for e in range(carpe_diem.epoch):
                 
                 dictResult[query_test] = [resultScore_ndcg_5 / idealScore_ndcg_5, resultScore_ndcg_10 / idealScore_ndcg_10, resultScore_srecall_5, resultScore_srecall_10, resultScore_err_5, resultScore_err_10, resultScore_ndcg_5_q / idealScore_ndcg_5, resultScore_ndcg_10_q / idealScore_ndcg_10, resultScore_srecall_5_q, resultScore_srecall_10_q, resultScore_err_5_q, resultScore_err_10_q]
                 
-                #fileRankingResult.close()
-
+                
             result_ndcg_5 = floatSumResultScore_ndcg_5 / len(dictResult.keys())
             result_ndcg_10 = floatSumResultScore_ndcg_10 / len(dictResult.keys())
             result_srecall_5 = floatSumResultScore_srecall_5 / len(dictResult.keys())

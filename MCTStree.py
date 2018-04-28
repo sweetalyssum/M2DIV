@@ -66,13 +66,7 @@ class search_tree(object):
                 max_id = -1
                 for child_id in tmp_node.fpointer:
                     child_node = self.tree.get_node(child_id)
-                    #score = child_node.data.p
                     score = self.carpe_diem.beta * child_node.data.p * ((tmp_node.data.num-1)**0.5 / (1+child_node.data.num))
-                    '''
-                    print score
-                    print child_node.data.Q
-                    print '**************'
-                    '''
         
                     score += child_node.data.Q
                     if score > max_score:
