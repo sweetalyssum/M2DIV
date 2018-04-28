@@ -68,11 +68,10 @@ class M2DIV(object):
         self.hidden_dim = self.dictConf['hidden_dim']
         self.search_time = 5000
         self.epoch = 50000
-        self.beta = float(sys.argv[3])
+        self.beta = 3.0
         
-        self.fileResult = open(self.folder + '/' + sys.argv[1], 'w')
-        self.fileReward = open(self.folder + '/' + sys.argv[2], 'w')
-
+        self.fileResult = open(self.folder + '/result.txt', 'w')
+        
 
     def alphaDCG(self, alpha, query, docList, k):
         DCG = 0.0
@@ -217,7 +216,7 @@ query_permutation_file = './data/query_permutation.json'
 query_representation_file = './data/query_representation.dat'
 document_representation_file = './data/doc_representation.dat'
 query_document_subtopics_file = './data/query_doc.json'
-folder = 'data/' + sys.argv[4]
+folder = 'data/folder1'
 
 
 carpe_diem = M2DIV(query_permutation_file, query_representation_file, document_representation_file, query_document_subtopics_file, folder)
@@ -228,7 +227,7 @@ config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 sess = tf.Session(config=config)
 
-ckpt = tf.train.get_checkpoint_state(folder + '/model_final_' + sys.argv[3] + '/')
+ckpt = tf.train.get_checkpoint_state(folder + '/model/')
 if ckpt and ckpt.model_checkpoint_path:
     print 'Load model from:', ckpt.model_checkpoint_path
     saver.restore(sess, ckpt.model_checkpoint_path)
@@ -312,9 +311,6 @@ for e in range(carpe_diem.epoch):
         value_with_mcts = value_with_mcts / idealScore_without_mcts
         value_without_mcts = value_without_mcts / idealScore_without_mcts
         
-        carpe_diem.fileReward.write(str(e) + ' ' + str(iteration) + ' ' + query_id + ' ' + str(value_with_mcts) + ' ' + str(value_without_mcts) + '\n')
-        carpe_diem.fileReward.flush()
-
         s = []
         for doc in listSelectedSet:
             doc_repr = carpe_diem.dictDocumentRepresentation[doc]
@@ -355,8 +351,8 @@ for e in range(carpe_diem.epoch):
 
             dictResult = {}
 
-            fileTmpResult_policy = open(carpe_diem.folder + '/tmp_result_policy_' + sys.argv[3] + '.txt', 'w')
-            fileTmpResult_value = open(carpe_diem.folder + '/tmp_result_value_' + sys.argv[3] + '.txt', 'w')
+            fileTmpResult_policy = open(carpe_diem.folder + '/tmp_result_policy.txt', 'w')
+            fileTmpResult_value = open(carpe_diem.folder + '/tmp_result_value.txt', 'w')
 
             for query_test in carpe_diem.listTestSet:
                 listSelectedSet = []
@@ -406,7 +402,7 @@ for e in range(carpe_diem.epoch):
                     
                 # save result
                 for id_num, doc_id_selected in enumerate(listSelectedSet):
-                    fileTmpResult_policy.write(str(query_test) + ' Q0 ' + doc_id_selected + ' ' +str(id_num+1) + ' ' + str(len(listSelectedSet)-id_num) + ' ' + sys.argv[4] + '_' + sys.argv[3] + '\n')
+                    fileTmpResult_policy.write(str(query_test) + ' Q0 ' + doc_id_selected + ' ' +str(id_num+1) + ' ' + str(len(listSelectedSet)-id_num) + ' folder1' + '\n')
                     fileTmpResult_policy.flush()
 
                 # value function
@@ -449,7 +445,7 @@ for e in range(carpe_diem.epoch):
                     
                 # save result
                 for id_num, doc_id_selected in enumerate(listSelectedSet_q):
-                    fileTmpResult_value.write(str(query_test) + ' Q0 ' + doc_id_selected + ' ' +str(id_num+1) + ' ' + str(len(listSelectedSet_q)-id_num) + ' ' + sys.argv[4] + '_' + sys.argv[3] + '\n')
+                    fileTmpResult_value.write(str(query_test) + ' Q0 ' + doc_id_selected + ' ' +str(id_num+1) + ' ' + str(len(listSelectedSet_q)-id_num) + ' folder1' + '\n')
                     fileTmpResult_value.flush()
     
                 resultScore_ndcg_10 = carpe_diem.alphaDCG(0.5, str(query_test), listSelectedSet, 10)
@@ -496,7 +492,7 @@ for e in range(carpe_diem.epoch):
             result_err_10_q = floatSumResultScore_err_10_q / len(dictResult.keys())
 
             # metrics
-            p_can = subprocess.Popen(['./ndeval', 'metrics/my_qrels.txt', carpe_diem.folder + '/tmp_result_policy_' + sys.argv[3] + '.txt'], shell=False, stdout=subprocess.PIPE, bufsize=-1)
+            p_can = subprocess.Popen(['./ndeval', 'metrics/my_qrels.txt', carpe_diem.folder + '/tmp_result_policy.txt'], shell=False, stdout=subprocess.PIPE, bufsize=-1)
             output_eval = p_can.communicate()
             output_eval = output_eval[-2].split('\n')[-2]
             output_eval = output_eval.split(',')
@@ -507,7 +503,7 @@ for e in range(carpe_diem.epoch):
             metrics_srecall_5 = output_eval[20]
             metrics_srecall_10 = output_eval[21]
 
-            p_can_q = subprocess.Popen(['./ndeval', 'metrics/my_qrels.txt', carpe_diem.folder + '/tmp_result_value_' + sys.argv[3] + '.txt'], shell=False, stdout=subprocess.PIPE, bufsize=-1)
+            p_can_q = subprocess.Popen(['./ndeval', 'metrics/my_qrels.txt', carpe_diem.folder + '/tmp_result_value.txt'], shell=False, stdout=subprocess.PIPE, bufsize=-1)
             output_eval_q = p_can_q.communicate()
             output_eval_q = output_eval_q[-2].split('\n')[-2]
             output_eval_q = output_eval_q.split(',')
@@ -525,7 +521,7 @@ for e in range(carpe_diem.epoch):
             carpe_diem.fileResult.write('\n')
             carpe_diem.fileResult.flush()
 
-            saver.save(sess, folder + '/model_final_' + sys.argv[3] + '/' + 'model.ckpt', global_step=iteration)
+            saver.save(sess, folder + '/model/' + 'model.ckpt', global_step=iteration)
             print 'Save model @ EPOCH %d' % iteration
 
         iteration += 1
